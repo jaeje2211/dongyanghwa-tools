@@ -1,0 +1,24 @@
+{
+  "name": "동양화 도구",
+  "short_name": "동양화도구",
+  "description": "아교포수 계산기 & 컬러배합 - 동양화 작업을 위한 디지털 도구",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1612",
+  "theme_color": "#1a1612",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
