@@ -1,46 +1,154 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 
 // ============================================================
-// 동양화 물감 팔레트 (한자, 카테고리, 아이콘 포함)
+// 동양화 물감 브랜드별 데이터베이스
 // ============================================================
-const PIG = [
-  { name: "호분", hanja: "胡粉", hex: "#F5F0E8", lab: [95.2, 0.5, 6.8], cat: "기본", desc: "흰색 (조개분말)" },
-  { name: "먹", hanja: "墨", hex: "#2A2A2A", lab: [17.5, 0, 0], cat: "기본", desc: "검정 (송연먹)" },
-  { name: "주", hanja: "朱", hex: "#E8432A", lab: [49, 62, 50], cat: "적색", desc: "주홍 (진사)" },
-  { name: "양홍", hanja: "洋紅", hex: "#D4245B", lab: [44, 64, 12], cat: "적색", desc: "선홍색" },
-  { name: "감지", hanja: "紺脂", hex: "#6B3A6B", lab: [32, 25, -22], cat: "적색", desc: "진홍/감색" },
-  { name: "황", hanja: "黃", hex: "#F0C430", lab: [81, 4, 74], cat: "황색", desc: "노란색 (석황)" },
-  { name: "황토", hanja: "黃土", hex: "#C49A3C", lab: [66, 10, 52], cat: "황색", desc: "황토색" },
-  { name: "대자", hanja: "代赭", hex: "#8B4513", lab: [38, 22, 35], cat: "갈색", desc: "갈색 (대자석)" },
-  { name: "남", hanja: "藍", hex: "#2E5090", lab: [35, 5, -40], cat: "청색", desc: "남색 (쪽)" },
-  { name: "본남", hanja: "本藍", hex: "#1B3A6B", lab: [26, 5, -35], cat: "청색", desc: "진남색" },
-  { name: "군청", hanja: "群靑", hex: "#2040A0", lab: [30, 18, -52], cat: "청색", desc: "군청색" },
-  { name: "백록", hanja: "白綠", hex: "#8FBC8F", lab: [73, -18, 14], cat: "녹색", desc: "연녹색 (공작석)" },
-  { name: "녹청", hanja: "綠靑", hex: "#2E8B57", lab: [51, -35, 15], cat: "녹색", desc: "청록색" },
-  { name: "농록", hanja: "濃綠", hex: "#1A5C3A", lab: [35, -30, 12], cat: "녹색", desc: "진녹색" },
-  { name: "자", hanja: "紫", hex: "#7B3F8E", lab: [38, 35, -30], cat: "보라", desc: "보라색" },
-];
+const BRANDS = {
+  shinhan: {
+    name: "신한 한국화 채색",
+    desc: "50색 · 국내 대표 전문가용",
+    colors: [
+      // 백색/흑색
+      { name: "호분", no: "301", hex: "#F5F0E8", cat: "백/흑" },
+      { name: "흑-1", no: "350", hex: "#2A2A2A", cat: "백/흑" },
+      { name: "흑-2", no: "351", hex: "#3A3530", cat: "백/흑" },
+      // 황색 계열
+      { name: "황", no: "303", hex: "#F0C430", cat: "황색" },
+      { name: "농황", no: "304", hex: "#E8A820", cat: "황색" },
+      { name: "황토-1", no: "308", hex: "#C49A3C", cat: "황색" },
+      { name: "황토-2", no: "309", hex: "#B88A30", cat: "황색" },
+      { name: "지분", no: "348", hex: "#D9C8A0", cat: "황색" },
+      // 적색 계열
+      { name: "주", no: "306", hex: "#E8432A", cat: "적색" },
+      { name: "주홍", no: "312", hex: "#E85530", cat: "적색" },
+      { name: "주황", no: "311", hex: "#F07030", cat: "적색" },
+      { name: "양홍-1", no: "305", hex: "#D4245B", cat: "적색" },
+      { name: "양홍-2", no: "313", hex: "#C92050", cat: "적색" },
+      { name: "연지-1", no: "307", hex: "#B82040", cat: "적색" },
+      { name: "연지-2", no: "330", hex: "#A01835", cat: "적색" },
+      { name: "홍매", no: "315", hex: "#C93068", cat: "적색" },
+      { name: "적자", no: "343", hex: "#8B2A3A", cat: "적색" },
+      // 갈색 계열
+      { name: "대자", no: "316", hex: "#8B4513", cat: "갈색" },
+      { name: "고동", no: "317", hex: "#5C3015", cat: "갈색" },
+      { name: "수감", no: "340", hex: "#A06030", cat: "갈색" },
+      { name: "초황", no: "346", hex: "#8A7030", cat: "갈색" },
+      // 녹색 계열
+      { name: "약엽", no: "321", hex: "#6B8C42", cat: "녹색" },
+      { name: "녹청", no: "323", hex: "#2E8B57", cat: "녹색" },
+      { name: "화백록", no: "324", hex: "#8FBC8F", cat: "녹색" },
+      { name: "농록", no: "325", hex: "#1A5C3A", cat: "녹색" },
+      { name: "녹초", no: "322", hex: "#4A8050", cat: "녹색" },
+      { name: "백록", no: "336", hex: "#90C8A0", cat: "녹색" },
+      { name: "앵다록", no: "310", hex: "#3A7040", cat: "녹색" },
+      { name: "비취", no: "344", hex: "#40A080", cat: "녹색" },
+      { name: "초록", no: "345", hex: "#308050", cat: "녹색" },
+      // 청색 계열
+      { name: "군청", no: "326", hex: "#2040A0", cat: "청색" },
+      { name: "남", no: "328", hex: "#2E5090", cat: "청색" },
+      { name: "백군", no: "329", hex: "#5080C0", cat: "청색" },
+      { name: "미청", no: "341", hex: "#3868A0", cat: "청색" },
+      { name: "청자", no: "342", hex: "#284880", cat: "청색" },
+      { name: "본남", no: "347", hex: "#1B3A6B", cat: "청색" },
+      { name: "천청", no: "349", hex: "#6090C0", cat: "청색" },
+      // 보라/자색 계열
+      { name: "자", no: "337", hex: "#7B3F8E", cat: "보라" },
+      { name: "모단색", no: "331", hex: "#9B4080", cat: "보라" },
+      { name: "적다색", no: "338", hex: "#6B3060", cat: "보라" },
+      // 특수색
+      { name: "육색", no: "332", hex: "#E8C8A8", cat: "특수" },
+      { name: "살색", no: "333", hex: "#F0D0B0", cat: "특수" },
+      { name: "회색", no: "334", hex: "#908880", cat: "특수" },
+      { name: "은회", no: "335", hex: "#B0A898", cat: "특수" },
+      { name: "등황", no: "339", hex: "#E8A040", cat: "특수" },
+    ],
+  },
+  gilsang12: {
+    name: "길상 분채 12색",
+    desc: "일본 길상 · 기본 세트",
+    colors: [
+      { name: "호분", no: "1", hex: "#F5F0E8", cat: "기본" },
+      { name: "먹", no: "2", hex: "#2A2A2A", cat: "기본" },
+      { name: "황", no: "3", hex: "#F0C430", cat: "황색" },
+      { name: "황토", no: "4", hex: "#C49A3C", cat: "황색" },
+      { name: "주", no: "5", hex: "#E8432A", cat: "적색" },
+      { name: "양홍", no: "6", hex: "#D4245B", cat: "적색" },
+      { name: "대자", no: "7", hex: "#8B4513", cat: "갈색" },
+      { name: "녹청", no: "8", hex: "#2E8B57", cat: "녹색" },
+      { name: "백록", no: "9", hex: "#8FBC8F", cat: "녹색" },
+      { name: "군청", no: "10", hex: "#2040A0", cat: "청색" },
+      { name: "남", no: "11", hex: "#2E5090", cat: "청색" },
+      { name: "자", no: "12", hex: "#7B3F8E", cat: "보라" },
+    ],
+  },
+  gilsang24: {
+    name: "길상 분채 24색",
+    desc: "일본 길상 · 확장 세트",
+    colors: [
+      { name: "호분", no: "1", hex: "#F5F0E8", cat: "기본" },
+      { name: "먹", no: "2", hex: "#2A2A2A", cat: "기본" },
+      { name: "황", no: "3", hex: "#F0C430", cat: "황색" },
+      { name: "농황", no: "4", hex: "#E8A820", cat: "황색" },
+      { name: "황토", no: "5", hex: "#C49A3C", cat: "황색" },
+      { name: "주", no: "6", hex: "#E8432A", cat: "적색" },
+      { name: "주홍", no: "7", hex: "#E85530", cat: "적색" },
+      { name: "양홍", no: "8", hex: "#D4245B", cat: "적색" },
+      { name: "연지", no: "9", hex: "#B82040", cat: "적색" },
+      { name: "홍매", no: "10", hex: "#C93068", cat: "적색" },
+      { name: "대자", no: "11", hex: "#8B4513", cat: "갈색" },
+      { name: "고동", no: "12", hex: "#5C3015", cat: "갈색" },
+      { name: "수감", no: "13", hex: "#A06030", cat: "갈색" },
+      { name: "약엽", no: "14", hex: "#6B8C42", cat: "녹색" },
+      { name: "녹청", no: "15", hex: "#2E8B57", cat: "녹색" },
+      { name: "백록", no: "16", hex: "#8FBC8F", cat: "녹색" },
+      { name: "농록", no: "17", hex: "#1A5C3A", cat: "녹색" },
+      { name: "앵다록", no: "18", hex: "#3A7040", cat: "녹색" },
+      { name: "군청", no: "19", hex: "#2040A0", cat: "청색" },
+      { name: "남", no: "20", hex: "#2E5090", cat: "청색" },
+      { name: "본남", no: "21", hex: "#1B3A6B", cat: "청색" },
+      { name: "백군", no: "22", hex: "#5080C0", cat: "청색" },
+      { name: "자", no: "23", hex: "#7B3F8E", cat: "보라" },
+      { name: "감지", no: "24", hex: "#6B3A6B", cat: "보라" },
+    ],
+  },
+};
+
+const BRAND_KEYS = Object.keys(BRANDS);
+
+// Build pigment data with Lab values from a brand's colors
+function buildPigments(colors) {
+  return colors.map((c) => {
+    const [r, g, b] = hexRgb(c.hex);
+    const lab = rgb2lab(r, g, b);
+    return { ...c, lab };
+  });
+}
+
+// ============================================================
+// Presets & steps (아교포수)
+// ============================================================
 
 const PRESETS = [
   { name: "일반 포수(종이)", ratio: 10, desc: "화선지·장지" },
   { name: "비단용", ratio: 8, desc: "비단·견" },
   { name: "연습용", ratio: 12, desc: "연습용 얇은 포수" },
   { name: "채색 바탕", ratio: 10, desc: "채색 전 밑포수" },
-  { name: "마감 포수", ratio: 15, desc: "완성 후 보호용" },
-];
-
-const SEASONS = [
-  { name: "봄·가을", factor: 1.0, desc: "표준" },
-  { name: "여름", factor: 1.15, desc: "묽게 ×1.15" },
-  { name: "겨울", factor: 0.85, desc: "진하게 ×0.85" },
 ];
 
 const QUICKS = [5, 10, 15, 20, 30];
 
+const ALUM_OPTIONS = [
+  { label: "1%", value: 0.01 },
+  { label: "2%", value: 0.02 },
+  { label: "3%", value: 0.03 },
+  { label: "4%", value: 0.04 },
+  { label: "5%", value: 0.05 },
+];
+
 const STEPS = [
-  "깨끗한 용기에 아교를 넣고 찬물을 부어 30분~1시간 불립니다.",
+  "깨끗한 용기에 아교를 넣고 찬물을 부어 6시간~하루 정도 충분히 불립니다.",
   "중탕(50~60°C)으로 아교를 완전히 녹입니다. 직접 가열 금물!",
-  "백반을 소량의 따뜻한 물에 따로 녹여 준비합니다.",
+  "백반을 곱게 갈아서 소량의 따뜻한 물에 녹여 준비합니다.",
   "녹인 아교 용액에 백반 용액을 천천히 섞어줍니다.",
   "거품을 걷어내고 체에 걸러 불순물을 제거합니다.",
   "포수붓으로 고르게 바릅니다. 2~3회, 완전 건조 후 덧바름.",
@@ -81,23 +189,23 @@ function rgb2hex(r, g, b) { return "#" + [r, g, b].map((c) => c.toString(16).pad
 function dist(a, b) { return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2); }
 function luminance(hex) { const [r,g,b] = hexRgb(hex); return (0.299*r + 0.587*g + 0.114*b) / 255; }
 
-function mixColor(targetHex) {
+function mixColor(targetHex, pigs) {
   const tLab = rgb2lab(...hexRgb(targetHex));
   let best = { d: Infinity, r: [], lab: null };
   const chk = (d, r, lab) => { if (d < best.d) best = { d, r, lab }; };
-  for (let i = 0; i < PIG.length; i++) chk(dist(tLab, PIG[i].lab), [{ i, p: 100 }], PIG[i].lab);
-  for (let i = 0; i < PIG.length; i++) for (let j = i + 1; j < PIG.length; j++) for (let r = 5; r <= 95; r += 5) {
-    const rr = r / 100, ml = [0, 1, 2].map((k) => PIG[i].lab[k] * rr + PIG[j].lab[k] * (1 - rr));
+  for (let i = 0; i < pigs.length; i++) chk(dist(tLab, pigs[i].lab), [{ i, p: 100 }], pigs[i].lab);
+  for (let i = 0; i < pigs.length; i++) for (let j = i + 1; j < pigs.length; j++) for (let r = 5; r <= 95; r += 5) {
+    const rr = r / 100, ml = [0, 1, 2].map((k) => pigs[i].lab[k] * rr + pigs[j].lab[k] * (1 - rr));
     chk(dist(tLab, ml), [{ i, p: r }, { i: j, p: 100 - r }], ml);
   }
-  for (let i = 0; i < PIG.length; i++) for (let j = i + 1; j < PIG.length; j++) for (let k = j + 1; k < PIG.length; k++)
+  for (let i = 0; i < pigs.length; i++) for (let j = i + 1; j < pigs.length; j++) for (let k = j + 1; k < pigs.length; k++)
     for (let r1 = 10; r1 <= 80; r1 += 10) for (let r2 = 10; r2 <= 80 - r1; r2 += 10) {
       const r3 = 100 - r1 - r2; if (r3 < 5) continue;
-      const ml = [0, 1, 2].map((m) => PIG[i].lab[m] * r1 / 100 + PIG[j].lab[m] * r2 / 100 + PIG[k].lab[m] * r3 / 100);
+      const ml = [0, 1, 2].map((m) => pigs[i].lab[m] * r1 / 100 + pigs[j].lab[m] * r2 / 100 + pigs[k].lab[m] * r3 / 100);
       chk(dist(tLab, ml), [{ i, p: r1 }, { i: j, p: r2 }, { i: k, p: r3 }], ml);
     }
   const rRgb = lab2rgb(...best.lab);
-  const recipe = best.r.map((x) => ({ name: PIG[x.i].name, hanja: PIG[x.i].hanja, hex: PIG[x.i].hex, ratio: x.p }));
+  const recipe = best.r.map((x) => ({ name: pigs[x.i].name, hex: pigs[x.i].hex, ratio: x.p, no: pigs[x.i].no || "" }));
   const accuracy = Math.max(0, Math.min(100, Math.round((1 - best.d / 100) * 100)));
 
   // Generate tips
@@ -174,8 +282,8 @@ const C = {
 export default function App() {
   const [tab, setTab] = useState(0);
   const [pr, setPr] = useState(0);
-  const [sn, setSn] = useState(0);
   const [ga, setGa] = useState(10);
+  const [alumIdx, setAlumIdx] = useState(2); // default 3%
   const [cp, setCp] = useState([]);
   const [guide, setGuide] = useState(false);
   const [modal, setModal] = useState(false);
@@ -190,15 +298,19 @@ export default function App() {
   const [imgColors, setImgColors] = useState([]);
   const [imgSrc, setImgSrc] = useState(null);
   const [showPalette, setShowPalette] = useState(false);
+  const [brandKey, setBrandKey] = useState("shinhan");
   const canvasRef = useRef(null);
   const fileRef = useRef(null);
 
+  const brand = BRANDS[brandKey];
+  const PIG = useMemo(() => buildPigments(brand.colors), [brandKey]);
+
   const allP = [...PRESETS, ...cp];
   const p = allP[pr] || PRESETS[0];
-  const se = SEASONS[sn];
-  const water = (ga * p.ratio * se.factor).toFixed(1);
-  const alum = (ga * 0.03).toFixed(2);
-  const ratio = (p.ratio * se.factor).toFixed(1);
+  const alumOpt = ALUM_OPTIONS[alumIdx];
+  const water = (ga * p.ratio).toFixed(1);
+  const alum = (ga * alumOpt.value).toFixed(2);
+  const ratio = p.ratio.toFixed(1);
   const now = () => new Date().toLocaleString("ko-KR");
 
   // Styles
@@ -226,7 +338,7 @@ export default function App() {
     let v = h || hex;
     if (!v.startsWith("#")) v = "#" + v;
     v = v.replace(/[^#0-9a-fA-F]/g, "").slice(0, 7);
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) { setHex(v); setMix(mixColor(v)); }
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { setHex(v); setMix(mixColor(v, PIG)); }
   };
 
   const handleImage = (e) => {
@@ -266,16 +378,6 @@ export default function App() {
         <path d="M6 7h12c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2z" stroke={C.gold} strokeWidth="1.5"/>
         <path d="M7 12h4M7 16h8" stroke={C.gold} strokeWidth="1.3" strokeLinecap="round" opacity="0.5"/>
         <circle cx="17" cy="12" r="1.2" fill={C.gold} opacity="0.4"/>
-      </svg>
-    </BrushIcon>
-  );
-
-  const IconSeason = () => (
-    <BrushIcon size={20}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="4" stroke={C.gold} strokeWidth="1.5"/>
-        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke={C.gold} strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M4.9 4.9l2.1 2.1M16.9 16.9l2.1 2.1M4.9 19.1l2.1-2.1M16.9 7.1l2.1-2.1" stroke={C.gold} strokeWidth="1.2" strokeLinecap="round" opacity="0.45"/>
       </svg>
     </BrushIcon>
   );
@@ -358,15 +460,9 @@ export default function App() {
         <button style={{ ...btn(false, false), marginTop: 10, fontSize: 11 }} onClick={() => { setModal(true); setCn(""); setCr("10"); }}>+ 나만의 비율 추가</button>
       </div>
 
-      <div style={card}>
-        <div style={ctitle}><IconSeason />계절 보정</div>
-        <div style={{ display: "flex", flexWrap: "wrap" }}>
-          {SEASONS.map((x, i) => (
-            <button key={i} style={chip(sn === i, false)} onClick={() => setSn(i)}>
-              <span>{x.name}</span>
-              <span style={{ color: C.t3, fontSize: 10, marginLeft: 4 }}>{x.desc}</span>
-            </button>
-          ))}
+      <div style={{ ...card, background: "rgba(196,162,101,0.06)", border: `1px solid rgba(196,162,101,0.15)` }}>
+        <div style={{ fontSize: 12, color: C.t2, lineHeight: 1.6 }}>
+          <IconWarning /> 습한 날(장마철, 비 오는 날)에는 포수 작업을 피하세요. 건조가 느려 곰팡이가 생길 수 있습니다.
         </div>
       </div>
 
@@ -384,17 +480,27 @@ export default function App() {
       </div>
 
       <div style={card}>
+        <div style={ctitle}><IconScale />백반 비율</div>
+        <div style={{ fontSize: 11, color: C.t3, marginBottom: 8 }}>사람마다 선호 비율이 다릅니다. 기본 3% 권장</div>
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+          {ALUM_OPTIONS.map((a, i) => (
+            <button key={i} style={chip(alumIdx === i, false)} onClick={() => setAlumIdx(i)}>{a.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={card}>
         <div style={ctitle}><IconResult />계산 결과</div>
-        <div style={{ fontSize: 11, color: C.t3, marginBottom: 10 }}>{p.name} · {se.name} · 아교 {ga}g</div>
+        <div style={{ fontSize: 11, color: C.t3, marginBottom: 10 }}>{p.name} · 백반 {alumOpt.label} · 아교 {ga}g</div>
         <div style={{ background: "rgba(0,0,0,0.25)", border: `1px solid ${C.gd}`, borderRadius: 12, padding: 14 }}>
-          {[["아교", ga + "g", C.gold], ["물", water + "ml", "#6ba3d6"], ["백반 (3%)", alum + "g", "#d4c4a8"], ["적용 비율", "1 : " + ratio, C.t1]].map(([l, v, vc], i, a) => (
+          {[["아교", ga + "g", C.gold], ["물", water + "ml", "#6ba3d6"], ["백반 (" + alumOpt.label + ")", alum + "g", "#d4c4a8"], ["적용 비율", "1 : " + ratio, C.t1]].map(([l, v, vc], i, a) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < a.length - 1 ? `1px solid rgba(139,115,85,0.15)` : "none" }}>
               <span style={{ color: C.t2, fontSize: 13 }}>{l}</span>
               <span style={{ fontWeight: 500, fontSize: 15, color: vc, letterSpacing: 0.5 }}>{v}</span>
             </div>
           ))}
         </div>
-        <button style={{ ...btn(true, false), marginTop: 12, width: "100%" }} onClick={() => setRecs([...recs, { d: now(), t: `[아교포수] ${p.name}/${se.name} — 아교 ${ga}g, 물 ${water}ml, 백반 ${alum}g` }])}>
+        <button style={{ ...btn(true, false), marginTop: 12, width: "100%" }} onClick={() => setRecs([...recs, { d: now(), t: `[아교포수] ${p.name}/백반${alumOpt.label} — 아교 ${ga}g, 물 ${water}ml, 백반 ${alum}g` }])}>
           <IconRecord />기록 저장
         </button>
       </div>
@@ -414,6 +520,7 @@ export default function App() {
             ))}
             <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(184,84,80,0.1)", borderRadius: 8, fontSize: 11, color: "#d4a0a0", lineHeight: 1.6 }}>
               <IconWarning />아교는 반드시 중탕으로 녹이세요. 직접 가열하면 접착력이 떨어집니다.<br/>
+              <IconWarning />백반은 덩어리째 넣지 말고 반드시 곱게 갈아서 물에 녹여 사용하세요.<br/>
               <IconWarning />남은 교반수는 냉장 보관, 2~3일 내 사용하세요.
             </div>
           </div>
@@ -497,6 +604,22 @@ export default function App() {
   // ===== TAB 1: 컬러배합 =====
   const T1 = () => (
     <>
+      {/* 물감 브랜드 선택 */}
+      <div style={card}>
+        <div style={ctitle}><IconPalette />사용 물감 선택</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {BRAND_KEYS.map((k) => (
+            <button key={k} onClick={() => { setBrandKey(k); setMix(null); }}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 10,
+                border: `1px solid ${brandKey === k ? C.gold : C.bd}`, background: brandKey === k ? "rgba(196,162,101,0.12)" : C.sf,
+                color: brandKey === k ? C.gold : C.t2, fontSize: 12, fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontWeight: brandKey === k ? 600 : 400 }}>{BRANDS[k].name}</span>
+              <span style={{ fontSize: 10, color: C.t3 }}>{BRANDS[k].desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* 이미지에서 색상 추출 */}
       <div style={card}>
         <div style={ctitle}><IconImageExtract />이미지에서 색상 추출</div>
@@ -515,7 +638,7 @@ export default function App() {
                 <div style={{ fontSize: 11, color: C.t3, marginBottom: 6 }}>추출된 색상 (터치하면 배합 레시피를 볼 수 있어요)</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {imgColors.map((c, i) => (
-                    <div key={i} onClick={() => { setHex(c); setMix(mixColor(c)); }}
+                    <div key={i} onClick={() => { setHex(c); setMix(mixColor(c, PIG)); }}
                       style={{ cursor: "pointer", textAlign: "center", transition: "transform 0.15s" }}>
                       <div style={{ width: 40, height: 40, borderRadius: 8, background: c, border: `2px solid ${hex === c ? C.gold : C.bd}`, boxShadow: hex === c ? `0 0 0 2px ${C.gold}40` : "none" }} />
                       <div style={{ fontSize: 8, color: C.t3, marginTop: 3, fontFamily: "monospace" }}>{c.toUpperCase()}</div>
@@ -588,7 +711,7 @@ export default function App() {
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: i < mix.recipe.length - 1 ? `1px solid rgba(139,115,85,0.12)` : "none" }}>
               <div style={{ width: 16, height: 16, borderRadius: 4, background: r.hex, border: `1px solid ${C.bd}` }} />
               <span style={{ fontSize: 13, color: C.t1 }}>{r.name}</span>
-              <span style={{ fontSize: 10, color: C.t3 }}>{r.hanja}</span>
+              <span style={{ fontSize: 10, color: C.t3 }}>{r.no}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: C.gold, fontWeight: 500 }}>{r.ratio}%</span>
             </div>
           ))}
@@ -611,12 +734,12 @@ export default function App() {
       {/* 물감 팔레트 */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setShowPalette(!showPalette)}>
-          <span style={{ ...ctitle, margin: 0 }}><IconPalette />동양화 물감 팔레트 ({PIG.length}종)</span>
+          <span style={{ ...ctitle, margin: 0 }}><IconPalette />{brand.name} ({PIG.length}색)</span>
           <span style={{ color: C.t3, transform: showPalette ? "rotate(180deg)" : "none", transition: "transform 0.3s", fontSize: 12 }}>▼</span>
         </div>
         {showPalette && (
           <div style={{ marginTop: 12 }}>
-            {["기본", "적색", "황색", "갈색", "청색", "녹색", "보라"].map((cat) => {
+            {[...new Set(PIG.map((p) => p.cat))].map((cat) => {
               const items = PIG.filter((p) => p.cat === cat);
               if (!items.length) return null;
               return (
@@ -624,10 +747,10 @@ export default function App() {
                   <div style={{ fontSize: 10, color: C.t3, marginBottom: 6, letterSpacing: 2 }}>{cat}</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {items.map((pg, i) => (
-                      <div key={i} style={{ textAlign: "center", width: 52 }}>
+                      <div key={i} onClick={() => { setHex(pg.hex); doMix(pg.hex); }} style={{ textAlign: "center", width: 52, cursor: "pointer" }}>
                         <div style={{ width: 44, height: 44, borderRadius: 10, background: pg.hex, border: `1px solid ${C.bd}`, margin: "0 auto" }} />
                         <div style={{ fontSize: 10, color: C.t2, marginTop: 3 }}>{pg.name}</div>
-                        <div style={{ fontSize: 8, color: C.t3 }}>{pg.hanja}</div>
+                        <div style={{ fontSize: 8, color: C.t3 }}>{pg.no}</div>
                       </div>
                     ))}
                   </div>
